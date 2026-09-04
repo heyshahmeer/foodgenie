@@ -5,9 +5,6 @@ import { Zap, Clock, List, Loader2 } from "./components/Icons";
 import HistoryItem from "./components/HistoryItem";
 import { formatRecipeText } from "./components/RecipeFormatter";
 
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
 export default function HomePage() {
   const [ingredients, setIngredients] = useState("");
   const [time, setTime] = useState(30);
@@ -32,35 +29,17 @@ export default function HomePage() {
     setRecipe(null);
     setStatusMessage("Generating recipe...");
 
-    // Mock mode if API key missing
-    if (!apiKey) {
-      await new Promise((r) => setTimeout(r, 2000));
-      const mockName = "Simulated Garlic Butter Pasta";
-      const mockBody = `Ingredients:\n- Pasta\n- Garlic\n- Butter\n\nInstructions:\n1. Cook pasta.\n2. Melt butter and garlic.\n3. Toss and serve.\n\nTotal Time: 15 minutes`;
-      setDishName(mockName);
-      setRecipe(mockBody);
-      setHistory([{ recipe: `${mockName}\n${mockBody}`, ingredients, time, createdAt: new Date().toLocaleDateString() }, ...history]);
-      setStatusMessage("Simulated recipe created!");
-      setLoading(false);
-      recipeRef.current?.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    // Real API call
     try {
-      const payload = {
-        contents: [{ parts: [{ text: `Create a recipe using: ${ingredients} in ${time} minutes.` }] }],
-        systemInstruction: { parts: [{ text: "First line must be recipe name, then details." }] },
-      };
-
-      const response = await fetch(API_URL, {
+      const response = await fetch("/api/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ingredients, time }),
       });
 
       const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error: No response.";
+      if (!response.ok) throw new Error(data.error || "Recipe generation failed.");
+
+      const text = data.text || "Error: No response.";
       const lines = text.split("\n");
       const title = lines[0]?.trim();
       const body = lines.slice(1).join("\n").trim();
@@ -72,7 +51,7 @@ export default function HomePage() {
       recipeRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       console.error(err);
-      setStatusMessage("Error generating recipe.");
+      setStatusMessage(err.message || "Error generating recipe.");
     } finally {
       setLoading(false);
     }
@@ -91,7 +70,6 @@ export default function HomePage() {
           FOOD GENIE 🧑‍🍳
         </h1>
         <p className="text-gray-600 mt-2 text-lg">Instantly create recipes with your ingredients.</p>
-        {!apiKey && <p className="mt-3 bg-red-100 text-red-700 p-2 rounded-lg animate-pulse">⚠️ Mock mode active – Gemini API key missing.</p>}
       </motion.header>
 
       <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">

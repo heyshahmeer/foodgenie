@@ -1,11 +1,11 @@
 # FoodGenie – AI-Powered Recipe Generator
 
-**RecipeAI** is an intelligent web application that generates recipes based on ingredients you provide. Leveraging the **Gemini API**, this app provides personalized, creative, and accurate recipes in real time. Built with **Next.js** and **Tailwind CSS**, it’s fully responsive and optimized for a seamless user experience.
+**RecipeAI** is an intelligent web application that generates recipes based on ingredients you provide. Leveraging the **Grok API**, this app provides personalized, creative, and accurate recipes in real time. Built with **Next.js** and **Tailwind CSS**, it’s fully responsive and optimized for a seamless user experience.
 
 ## Features
 
 * 🥘 **Ingredient-Based Recipe Generation**: Input available ingredients and get unique recipe suggestions instantly.
-* ⚡ **AI-Powered**: Uses Gemini API to provide accurate and creative recipe outputs.
+* ⚡ **AI-Powered**: Uses Grok API to provide accurate and creative recipe outputs.
 * 📄 **Recipe Details**: View ingredients, steps, and cooking instructions for each generated recipe.
 * 🎨 **Responsive Design**: Works smoothly on desktop, tablet, and mobile devices.
 * 🛠️ **Future-Ready**: Easily extendable to include recipe saving, ratings, or personalization.
@@ -14,7 +14,7 @@
 
 * **Frontend & Backend**: Next.js 15+
 * **Styling**: Tailwind CSS
-* **API Integration**: Gemini API for recipe generation
+* **API Integration**: Grok API for recipe generation
 * **Deployment**: Vercel
 
 ## Installation
@@ -37,13 +37,13 @@ cd recipeai
 npm install
 ```
 
-4. Add your Gemini API key:
+4. Add your Grok API key:
 
 * Create a `.env.local` file in the root of the project
 * Add the following:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+XAI_API_KEY=your_xai_api_key_here
 ```
 
 5. Run the development server:
