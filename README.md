@@ -22,13 +22,13 @@
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/shahmeerhere/recipeai.git
+git clone https://github.com/shahmeerhere/foodgenie.git
 ```
 
 2. Navigate into the project folder:
 
 ```bash
-cd recipeai
+cd foodgenie
 ```
 
 3. Install dependencies:
