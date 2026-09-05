@@ -10,9 +10,12 @@ export default function HomePage() {
   const [time, setTime] = useState(30);
   const [dishName, setDishName] = useState(null);
   const [recipe, setRecipe] = useState(null);
+  const [meta, setMeta] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [hasError, setHasError] = useState(false);
+  const [copied, setCopied] = useState(false);
   const recipeRef = useRef(null);
 
   // Framer Motion variants
@@ -25,6 +28,7 @@ export default function HomePage() {
     if (!ingredients.trim() || loading) return;
 
     setLoading(true);
+    setHasError(false);
     setDishName(null);
     setRecipe(null);
     setStatusMessage("Generating recipe...");
@@ -46,16 +50,42 @@ export default function HomePage() {
 
       setDishName(title);
       setRecipe(body);
+      setMeta({ ingredients, time });
       setHistory([{ recipe: text, ingredients, time, createdAt: new Date().toLocaleDateString() }, ...history]);
       setStatusMessage("Recipe generated!");
       recipeRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       console.error(err);
+      setHasError(true);
       setStatusMessage(err.message || "Error generating recipe.");
     } finally {
       setLoading(false);
     }
   }, [ingredients, time, loading, history]);
+
+  const handleCopy = useCallback(async () => {
+    if (!dishName || !recipe) return;
+    try {
+      await navigator.clipboard.writeText(`${dishName}\n\n${recipe}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [dishName, recipe]);
+
+  const handleReset = useCallback(() => {
+    setDishName(null);
+    setRecipe(null);
+    setMeta(null);
+    setIngredients("");
+    setHasError(false);
+    setStatusMessage("");
+  }, []);
+
+  const ingredientCount = meta?.ingredients
+    ? meta.ingredients.split(",").map((i) => i.trim()).filter(Boolean).length
+    : 0;
 
   return (
     <motion.div
@@ -111,36 +141,126 @@ export default function HomePage() {
               whileTap={{ scale: 0.98 }}
             >
               <span className="absolute inset-0 bg-gradient-to-r from-orange-400 to-teal-400 opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-md"></span>
-              {loading ? "Generating..." : "Generate My Recipe 🚀"}
+              <span className="relative inline-flex items-center justify-center gap-2">
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate My Recipe 🚀"
+                )}
+              </span>
             </motion.button>
+
+            {/* Error feedback */}
+            {hasError && !loading && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm"
+              >
+                <span>⚠️</span>
+                <span>{statusMessage}</span>
+              </motion.div>
+            )}
           </motion.div>
 
+          {/* LOADING SKELETON */}
+          {loading && (
+            <motion.div
+              className="mt-8 bg-white rounded-3xl shadow-lg border border-gray-100 p-6 sm:p-8 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="animate-pulse space-y-5">
+                <div className="h-3 w-28 bg-teal-100 rounded-full" />
+                <div className="h-8 w-2/3 bg-gray-200 rounded-lg" />
+                <div className="flex gap-2">
+                  <div className="h-7 w-24 bg-orange-100 rounded-full" />
+                  <div className="h-7 w-28 bg-teal-100 rounded-full" />
+                </div>
+                <div className="h-px bg-gray-100" />
+                <div className="space-y-2.5">
+                  <div className="h-4 bg-gray-100 rounded w-full" />
+                  <div className="h-4 bg-gray-100 rounded w-11/12" />
+                  <div className="h-4 bg-gray-100 rounded w-4/5" />
+                  <div className="h-4 bg-gray-100 rounded w-full" />
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* GENERATED RECIPE DISPLAY */}
-          {dishName && recipe && (
+          {!loading && dishName && recipe && (
             <motion.div
               ref={recipeRef}
-              className="mt-8 bg-white p-6 rounded-3xl shadow-lg border border-orange-200 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
+              className="mt-8 bg-white rounded-3xl shadow-xl border border-orange-100 overflow-hidden hover:shadow-2xl transition-shadow duration-500"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              <h2 className="text-2xl font-bold text-teal-600 mb-4">Your Dish 🍽️</h2>
-              <motion.h3
-                className="text-3xl font-bold text-orange-600 mb-4 bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 text-transparent"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                {dishName}
-              </motion.h3>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="leading-relaxed text-gray-700"
-              >
-                {formatRecipeText(recipe)}
-              </motion.div>
+              {/* Accent strip */}
+              <div className="h-1.5 bg-gradient-to-r from-orange-500 via-red-400 to-teal-500" />
+
+              <div className="p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div>
+                    <p className="text-sm font-medium text-teal-600 mb-1">Your dish is ready</p>
+                    <motion.h3
+                      className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      {dishName}
+                    </motion.h3>
+                  </div>
+                  <span className="text-4xl shrink-0" aria-hidden="true">🍽️</span>
+                </div>
+
+                {/* Meta badges */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full text-sm font-medium border border-orange-200">
+                    <Clock className="w-4 h-4" /> Ready in {meta?.time ?? time} min
+                  </span>
+                  {ingredientCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-full text-sm font-medium border border-teal-200">
+                      🧂 {ingredientCount} ingredient{ingredientCount === 1 ? "" : "s"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="h-px bg-gray-100 mb-6" />
+
+                {/* Recipe body */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="leading-relaxed text-gray-700"
+                >
+                  {formatRecipeText(recipe)}
+                </motion.div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-100">
+                  <button
+                    onClick={handleCopy}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                  >
+                    {copied ? "✅ Copied" : "📋 Copy recipe"}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                  >
+                    🔄 Start a new recipe
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
         </motion.div>
@@ -172,6 +292,7 @@ export default function HomePage() {
                       onSelect={(title, body) => {
                         setDishName(title);
                         setRecipe(body);
+                        setMeta({ ingredients: item.ingredients, time: item.time });
                         recipeRef.current?.scrollIntoView({ behavior: "smooth" });
                       }}
                     />
